@@ -1,0 +1,376 @@
+<!doctype html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Tembak Sudut — Trigonometria Quest (v2.0)</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.22/dist/katex.min.css">
+<style>
+:root{--surface:#f6f9fb;--text:#0f172a;--muted:#475569;--tosca:#06b6b4;--accent:linear-gradient(90deg,#06b6b4,#2dd4bf);--good:#16a34a;--bad:#ef4444}
+*{box-sizing:border-box}
+html,body{margin:0;font-family:Inter,system-ui,Arial,sans-serif;background:var(--surface);color:var(--text);-webkit-font-smoothing:antialiased}
+body{display:flex;flex-direction:column;align-items:center;padding:0 10px 32px}
+.main-header{width:100%;max-width:1100px;display:flex;align-items:center;gap:14px;background:#fff;border-bottom:3px solid rgba(6,182,180,.18);padding:12px 18px;border-radius:12px 12px 0 0;margin-top:16px}
+.logo{width:56px;height:56px;border-radius:12px;background:var(--accent);display:flex;align-items:center;justify-content:center;font-weight:700;color:#04202a;font-size:22px;flex:none}
+.game-title{margin:0;font-size:20px;font-weight:800;color:#04202a}
+.lead{margin:4px 0 0;color:#0f766e;font-size:13px}
+.app{width:100%;max-width:1100px;background:#fff;border-radius:0 0 12px 12px;padding:18px;box-shadow:0 12px 30px rgba(15,23,42,.06)}
+.layout{display:grid;grid-template-columns:1fr 330px;gap:18px}
+.play{display:flex;flex-direction:column;align-items:center;gap:10px;min-width:0}
+.hud{display:flex;gap:10px;width:100%;justify-content:space-between}
+.stat{background:#f1f5f9;padding:8px 12px;border-radius:10px;font-size:13px}
+svg{width:100%;max-width:440px;height:auto}
+.question{font-size:22px;font-weight:800;text-align:center}
+.answers{display:flex;gap:12px;flex-wrap:wrap;justify-content:center}
+.btn{padding:12px 18px;border-radius:12px;background:#f1f5f9;border:1px solid rgba(2,6,23,.08);cursor:pointer;min-width:110px;text-align:center;color:var(--text);font:inherit;font-weight:700}
+.answers .btn{font-size:18px;min-width:130px}
+.btn:focus-visible{outline:3px solid var(--tosca);outline-offset:2px}
+.btn:disabled{cursor:default}
+.btn.primary{background:var(--accent);color:#04202a;border:none}
+.btn.ghost{background:transparent}
+.btn.correct{background:var(--good);color:#fff}
+.btn.wrong{background:var(--bad);color:#fff}
+.ctrl,.ctrl2{display:flex;gap:10px;flex-wrap:wrap;justify-content:center;margin-top:6px}
+.fb{width:100%;max-width:640px;min-height:170px;background:#f8fafc;border:1px solid rgba(2,6,23,.08);border-radius:12px;padding:12px 16px;font-size:14px;line-height:1.55}
+.fb p,.fb ul,.fb ol{margin:6px 0}.fb ol,.fb ul{padding-left:20px}
+.fb summary{cursor:pointer;font-weight:700;color:#0f766e}
+.ok{color:#15803d}.no{color:#b91c1c}
+.koor{margin:6px 0;color:var(--muted)}
+.side{display:flex;flex-direction:column;gap:12px}
+.panel{border:1px solid rgba(2,6,23,.08);border-radius:10px;padding:12px;font-size:14px;color:var(--muted);line-height:1.5}
+.panel strong{color:var(--text)}
+.panel label{display:flex;justify-content:space-between;align-items:center;gap:8px;margin-top:8px}
+.panel select{font:inherit;padding:4px}
+.cf{position:fixed;top:-20px;pointer-events:none;z-index:99;animation:fall linear forwards}
+@keyframes fall{to{transform:translateY(110vh) rotate(720deg)}}
+@media (max-width:900px){.layout{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<header class="main-header">
+  <div class="logo">TQ</div>
+  <div><h1 class="game-title">Tembak Sudut — Trigonometria Quest</h1>
+  <p class="lead">Game Interaktif Kelas X | Latihan Sin, Cos, Tan pada Unit Circle</p></div>
+</header>
+<div class="app"><div class="layout">
+<main class="play">
+  <div class="hud">
+    <div class="stat">Level: <strong id="level">1</strong></div>
+    <div class="stat">Skor: <strong id="score">0</strong></div>
+    <div class="stat">Sisa Soal: <strong id="remaining">0</strong></div>
+  </div>
+  <svg id="sg" viewBox="0 0 440 440" role="img" aria-label="Lingkaran satuan dengan empat kuadran"></svg>
+  <div class="question" id="questionText">Tekan Mulai untuk memulai permainan</div>
+  <div class="answers" id="answers" aria-live="polite"></div>
+  <div class="fb" id="fb" aria-live="polite"></div>
+  <div class="ctrl">
+    <button class="btn primary" id="startBtn">Mulai</button>
+    <button class="btn ghost" id="hintBtn">Petunjuk</button>
+    <button class="btn ghost" id="skipBtn">Lewati</button>
+  </div>
+</main>
+<aside class="side">
+  <div class="panel"><strong>Cara bermain</strong><br>Pikirkan dulu posisi sudutnya: di kuadran berapa, dan apa tanda fungsinya? Lalu pilih jawaban. Petunjuk tidak mengurangi skor.</div>
+  <div class="panel"><strong>Setelah menjawab, lihat gambarnya</strong>
+    <ul style="margin:6px 0;padding-left:18px"><li>Garis oranye: x = cos θ</li><li>Garis ungu: y = sin θ</li><li>Busur hitam: sudut acuan α</li></ul></div>
+  <div class="panel"><strong>Statistik</strong><br>Benar: <span id="correctCount">0</span> · Salah: <span id="wrongCount">0</span> · Dilewati: <span id="skipCount">0</span></div>
+  <div class="panel"><strong>Setting Soal</strong>
+    <label>Jumlah Soal: <select id="qCount"><option>5</option><option selected>10</option><option>15</option><option>20</option></select></label>
+    <label>Jenis Fungsi: <select id="typeSelect"><option value="sin">sin</option><option value="cos">cos</option><option value="tan">tan</option><option value="mix">campur</option></select></label>
+    <button class="btn primary" id="applySettings" style="width:100%;margin-top:10px">Terapkan</button></div>
+</aside>
+</div></div>
+<script src="https://cdn.jsdelivr.net/npm/katex@0.16.22/dist/katex.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/katex@0.16.22/dist/contrib/auto-render.min.js"></script>
+<script>
+// referensi.js: implementasi acuan teori trigonometri untuk Trigonometria Quest v2.0
+// Semua nilai disimpan sebagai TEKS (bukan desimal) supaya tampil persis seperti di buku.
+
+const TD = "tak terdefinisi";
+const ROMAWI = { 1: "I", 2: "II", 3: "III", 4: "IV" };
+
+// Nilai mutlak (tanpa tanda) untuk sudut acuan 30, 45, 60
+const NILAI_ISTIMEWA = {
+  30: { sin: "1/2",  cos: "√3/2", tan: "1/√3" },
+  45: { sin: "√2/2", cos: "√2/2", tan: "1" },
+  60: { sin: "√3/2", cos: "1/2",  tan: "√3" }
+};
+// Kebalikan tan (kotangen), hanya dipakai untuk pilihan pengecoh
+const KOTANGEN = { 30: "√3", 45: "1", 60: "1/√3" };
+
+// Sudut tepat di sumbu (tidak punya sudut acuan)
+const SUMBU = {
+  0:   { titik: [1, 0],  sin: "0",  cos: "1",  tan: "0" },
+  90:  { titik: [0, 1],  sin: "1",  cos: "0",  tan: TD  },
+  180: { titik: [-1, 0], sin: "0",  cos: "-1", tan: "0" },
+  270: { titik: [0, -1], sin: "-1", cos: "0",  tan: TD  }
+};
+
+// Tanda tiap fungsi di tiap kuadran (1 = positif, -1 = negatif)
+const TANDA = {
+  1: { sin: 1,  cos: 1,  tan: 1 },
+  2: { sin: 1,  cos: -1, tan: -1 },
+  3: { sin: -1, cos: -1, tan: 1 },
+  4: { sin: -1, cos: 1,  tan: -1 }
+};
+
+const ATURAN_TANDA = {
+  1: "Di kuadran I, sin, cos, dan tan semuanya positif.",
+  2: "Di kuadran II, hanya sin yang positif; cos dan tan negatif.",
+  3: "Di kuadran III, hanya tan yang positif; sin dan cos negatif.",
+  4: "Di kuadran IV, hanya cos yang positif; sin dan tan negatif."
+};
+
+// ---------- fungsi inti ----------
+function kuadranDari(t) { return t < 90 ? 1 : t < 180 ? 2 : t < 270 ? 3 : 4; }
+function sudutAcuanDari(t, q) { return q === 1 ? t : q === 2 ? 180 - t : q === 3 ? t - 180 : 360 - t; }
+// "0" dan TD tidak boleh diberi tanda (hindari "-0")
+function beriTanda(nilai, tanda) { return (tanda === 1 || nilai === "0" || nilai === TD) ? nilai : "-" + nilai; }
+function negasi(n) { if (n === "0" || n === TD) return null; return n[0] === "-" ? n.slice(1) : "-" + n; }
+
+// Sudut yang didukung: kelipatan 90, serta sudut yang sudut acuannya 30/45/60 (0..360)
+function selesaikan(thetaTampil, fn) {
+  const t = ((thetaTampil % 360) + 360) % 360;
+  if (t % 90 === 0) {
+    const s = SUMBU[t];
+    return { theta: thetaTampil, fn, padaSumbu: true, titik: s.titik, hasil: s[fn] };
+  }
+  const q = kuadranDari(t);
+  const alpha = sudutAcuanDari(t, q);
+  const dasar = NILAI_ISTIMEWA[alpha][fn];
+  const tanda = TANDA[q][fn];
+  return { theta: thetaTampil, fn, padaSumbu: false, kuadran: q, alpha, dasar, tanda, hasil: beriTanda(dasar, tanda) };
+}
+
+// ---------- umpan balik penjelasan (ditampilkan setelah menjawab) ----------
+function susunLangkah(h) {
+  const { theta, fn } = h;
+  if (h.padaSumbu) {
+    const [x, y] = h.titik;
+    return [
+      `Sudut ${theta}° tepat berada di sumbu, jadi tidak ada sudut acuan.`,
+      `Titik pada lingkaran satuan: (cos θ, sin θ) = (x, y) = (${x}, ${y}).`,
+      `sin θ = y, cos θ = x, tan θ = y/x` + (x === 0 ? `, dan karena x = 0 hasilnya tidak terdefinisi.` : `.`),
+      `Jadi ${fn} ${theta}° = ${h.hasil}.`
+    ];
+  }
+  const romawi = ROMAWI[h.kuadran];
+  const kata = h.tanda === 1 ? "positif" : "negatif";
+  const rumus = { 2: `180° − ${theta}°`, 3: `${theta}° − 180°`, 4: `360° − ${theta}°` }[h.kuadran];
+  return [
+    `${theta}° berada di kuadran ${romawi}.`,
+    h.kuadran === 1
+      ? `Di kuadran I, sudut acuan sama dengan sudutnya: α = ${h.alpha}°.`
+      : `Sudut acuan α = ${rumus} = ${h.alpha}°.`,
+    `${fn} ${h.alpha}° = ${h.dasar}.`,
+    `Di kuadran ${romawi}, ${fn} bernilai ${kata}.`,
+    `Jadi ${fn} ${theta}° = ${h.hasil}.`
+  ];
+}
+
+// ---------- petunjuk bertingkat (tingkat 1..3, tanpa penalti skor) ----------
+function petunjuk(h, tingkat) {
+  const { theta, fn } = h;
+  if (h.padaSumbu) {
+    const [x, y] = h.titik;
+    return [
+      `Sudut ${theta}° tepat di sumbu. Titik pada lingkaran satuan adalah (${x}, ${y}).`,
+      `Ingat: sin θ = y, cos θ = x, tan θ = y/x.`,
+      `Baca ${fn === "sin" ? "y" : fn === "cos" ? "x" : "y/x"} dari titik (${x}, ${y}).`
+    ][Math.min(tingkat, 3) - 1];
+  }
+  const kata = h.tanda === 1 ? "positif" : "negatif";
+  return [
+    `Sudut ${theta}° ada di kuadran ${ROMAWI[h.kuadran]}. Di kuadran ini ${fn} bernilai ${kata}.`,
+    `Sudut acuannya ${h.alpha}° (sudut antara garis dan sumbu x).`,
+    `Nilai dasarnya: ${fn} ${h.alpha}° = ${h.dasar}. Tinggal beri tanda yang sesuai.`
+  ][Math.min(tingkat, 3) - 1];
+}
+
+// ---------- pilihan jawaban berbasis jenis kesalahan ----------
+const POOL_NILAI = ["1/2", "√2/2", "√3/2", "1", "1/√3", "√3"];
+
+function acak(arr) {
+  const a = arr.slice();
+  for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; }
+  return a;
+}
+
+// Mengembalikan 3 pilihan [{nilai, jenis}], jenis: benar | salah_tanda | fungsi_tertukar | sudut_acuan_keliru | acak
+function bangunPilihan(theta, fn) {
+  const h = selesaikan(theta, fn);
+  const benar = h.hasil;
+  const kandidat = [];
+  if (h.padaSumbu) {
+    const pool = ["0", "1", "-1"];
+    if (fn === "tan") pool.push(TD);
+    acak(pool).forEach(v => kandidat.push({ nilai: v, jenis: "acak" }));
+  } else {
+    kandidat.push({ nilai: negasi(benar), jenis: "salah_tanda" });
+    const lain = fn === "tan"
+      ? beriTanda(KOTANGEN[h.alpha], h.tanda)
+      : selesaikan(theta, fn === "sin" ? "cos" : "sin").hasil;
+    kandidat.push({ nilai: lain, jenis: "fungsi_tertukar" });
+    kandidat.push({ nilai: beriTanda(NILAI_ISTIMEWA[90 - h.alpha][fn], h.tanda), jenis: "sudut_acuan_keliru" });
+    acak(POOL_NILAI.flatMap(v => [v, "-" + v])).forEach(v => kandidat.push({ nilai: v, jenis: "acak" }));
+  }
+  const dipilih = [];
+  for (const k of kandidat) {
+    if (k.nilai && k.nilai !== benar && !dipilih.some(d => d.nilai === k.nilai)) dipilih.push(k);
+    if (dipilih.length === 2) break;
+  }
+  return { h, pilihan: acak([{ nilai: benar, jenis: "benar" }, ...dipilih]) };
+}
+
+// Kalimat pembuka umpan balik sesuai jenis kesalahan (dilanjutkan dengan susunLangkah)
+function umpanBalikKhusus(jenis, h) {
+  switch (jenis) {
+    case "salah_tanda":
+      return `Nilainya sudah tepat, tapi cek tandanya. ${ATURAN_TANDA[h.kuadran]}`;
+    case "fungsi_tertukar":
+      return h.fn === "tan"
+        ? "Itu kebalikan dari tan. Ingat tan θ = sin θ / cos θ = y/x."
+        : `Itu nilai ${h.fn === "sin" ? "cos" : "sin"}, bukan ${h.fn}. Ingat sin θ = y (tinggi titik) dan cos θ = x (jarak mendatar).`;
+    case "sudut_acuan_keliru":
+      return `Sudut acuan ${h.theta}° adalah ${h.alpha}°, bukan ${90 - h.alpha}°. Jadi nilai dasarnya ${h.fn} ${h.alpha}° = ${h.dasar}.`;
+    default:
+      return "Belum tepat. Perhatikan langkah-langkah berikut.";
+  }
+}
+
+if (typeof module !== "undefined") module.exports = { selesaikan, susunLangkah, petunjuk, bangunPilihan, umpanBalikKhusus, TD };
+
+// ================= LOGIKA GAME (v2.0) =================
+(function(){
+const $=id=>document.getElementById(id);
+const C=220,R=160,AMBANG=0.8;
+const LEVEL_SUDUT={1:[30,45,60],2:[120,135,150,210,225,240,300,315,330],3:[30,45,60,120,135,150,210,225,240,300,315,330,0,90,180,270]};
+const NAMA_JENIS={salah_tanda:"menentukan tanda di tiap kuadran",fungsi_tertukar:"membedakan sin, cos, dan tan",sudut_acuan_keliru:"menentukan sudut acuan",acak:"nilai sudut istimewa"};
+const st={level:1,n:10,fn:"sin",pool:[],cur:null,h:null,pilihan:[],skor:0,benar:0,salah:0,lewat:0,total:0,gagal:[],jenisSalah:{},hint:0,jawab:false,main:false};
+const NILAI_TEX={"1/2":"\\frac{1}{2}","√2/2":"\\frac{\\sqrt{2}}{2}","√3/2":"\\frac{\\sqrt{3}}{2}","1/√3":"\\frac{1}{\\sqrt{3}}","√2":"\\sqrt{2}","√3":"\\sqrt{3}"};
+function mathMarkup(html){return html.replace(/-?(?:1\/√3|√[23]\/2|1\/2|√[23])/g,value=>{const negative=value.startsWith("-"),base=negative?value.slice(1):value;return `\\(${negative?"-":""}${NILAI_TEX[base]}\\)`;});}
+function renderMath(element){if(window.renderMathInElement)window.renderMathInElement(element,{delimiters:[{left:"\\(",right:"\\)",display:false}],throwOnError:false});}
+function showHTML(element,html){element.innerHTML=mathMarkup(html);renderMath(element);}
+const P=(t,r=R)=>[C+r*Math.cos(t*Math.PI/180),C-r*Math.sin(t*Math.PI/180)];
+const T=(x,y,s,a,col)=>{if(/[√/]/.test(s)){const left=a==="middle"?x-70:a==="end"?x-140:x,align=a==="middle"?"center":a==="end"?"right":"left";return `<foreignObject x="${left}" y="${y-16}" width="140" height="32"><div xmlns="http://www.w3.org/1999/xhtml" style="width:140px;color:${col};font-size:12.5px;font-weight:700;text-align:${align};white-space:nowrap">${mathMarkup(s)}</div></foreignObject>`;}return `<text x="${x}" y="${y}" text-anchor="${a}" font-size="12.5" font-weight="700" fill="${col}" style="paint-order:stroke;stroke:#fff;stroke-width:4px">${s}</text>`;};
+const tandaTeks=q=>{const k=TANDA[q],f=v=>v>0?"+":"−";return `sin ${f(k.sin)}  cos ${f(k.cos)}  tan ${f(k.tan)}`};
+
+function bangunLingkaran(){
+  const w=[["#06b6b4",C+R,C,C,C-R],["#facc15",C,C-R,C-R,C],["#fb923c",C-R,C,C,C+R],["#60a5fa",C,C+R,C+R,C]];
+  let s=w.map((a,i)=>`<path id="q${i+1}" d="M${C} ${C}L${a[1]} ${a[2]}A${R} ${R} 0 0 0 ${a[3]} ${a[4]}Z" fill="${a[0]}" fill-opacity=".22"/>`).join("");
+  const pos=[[C+84,C-62],[C-84,C-62],[C-84,C+50],[C+84,C+50]];
+  s+=pos.map((p,i)=>`<text x="${p[0]}" y="${p[1]}" text-anchor="middle" font-size="13" font-weight="700" fill="#0f172a">Kuadran ${ROMAWI[i+1]}<tspan x="${p[0]}" dy="16" font-size="11.5" font-weight="500" fill="#334155">${tandaTeks(i+1)}</tspan></text>`).join("");
+  s+=`<circle cx="${C}" cy="${C}" r="${R}" fill="none" stroke="#94a3b8" stroke-width="2"/><line x1="${C-R-14}" y1="${C}" x2="${C+R+14}" y2="${C}" stroke="#64748b"/><line x1="${C}" y1="${C-R-14}" x2="${C}" y2="${C+R+14}" stroke="#64748b"/>`;
+  s+=`<g id="fbg"></g><line id="rl" x1="${C}" y1="${C}" x2="${C}" y2="${C}" stroke="#06b6b4" stroke-width="5" stroke-linecap="round"/><circle id="pt" r="9" fill="#06b6b4" stroke="#fff" stroke-width="3"/><text id="al" font-size="13" font-weight="700" text-anchor="middle" fill="#04202a" style="paint-order:stroke;stroke:#fff;stroke-width:4px"></text>`;
+  $("sg").innerHTML=s;
+}
+function setAngle(t){
+  const [x,y]=P(t),[lx,ly]=P(t,R+26);
+  $("rl").setAttribute("x2",x);$("rl").setAttribute("y2",y);
+  $("pt").setAttribute("cx",x);$("pt").setAttribute("cy",y);
+  $("al").setAttribute("x",lx);$("al").setAttribute("y",ly+4);$("al").textContent=t+"°";
+  const q=t%90===0?0:kuadranDari(t);
+  [1,2,3,4].forEach(n=>$("q"+n).setAttribute("fill-opacity",n===q?".42":".22"));
+  $("fbg").innerHTML="";
+}
+// proyeksi x/y, busur sudut acuan, dan nilai koordinat: tampil setelah menjawab
+function gambarUmpan(h){
+  const t=h.theta,[px,py]=P(t),c=selesaikan(t,"cos").hasil,s=selesaikan(t,"sin").hasil;let g="";
+  if(Math.abs(px-C)>1)g+=`<line x1="${C}" y1="${C}" x2="${px}" y2="${C}" stroke="#ea580c" stroke-width="4"/>`+T((C+px)/2,C+(py<C?20:-10),"x = "+c,"middle","#c2410c");
+  if(Math.abs(py-C)>1)g+=`<line x1="${px}" y1="${C}" x2="${px}" y2="${py}" stroke="#7c3aed" stroke-width="4"/>`+T(px+(px>=C?10:-10),(C+py)/2+4,"y = "+s,px>=C?"start":"end","#6d28d9");
+  if(!h.padaSumbu){
+    const q=h.kuadran,a0=q===1?0:q===4?360:180,rr=46,[sx,sy]=P(a0,rr),[ex,ey]=P(t,rr),[mx,my]=P((a0+t)/2,rr+22);
+    g+=`<path d="M${sx} ${sy}A${rr} ${rr} 0 0 ${q===2||q===4?1:0} ${ex} ${ey}" fill="none" stroke="#0f172a" stroke-width="3"/>`+T(mx,my+4,"α = "+h.alpha+"°","middle","#0f172a");
+  }
+  $("fbg").innerHTML=g;renderMath($("fbg"));
+}
+function hud(){
+  $("level").textContent=st.level;$("score").textContent=st.skor;
+  $("correctCount").textContent=st.benar;$("wrongCount").textContent=st.salah;$("skipCount").textContent=st.lewat;
+}
+function susunPool(){
+  const fns=st.fn==="mix"?["sin","cos","tan"]:[st.fn],combos=[];
+  LEVEL_SUDUT[st.level].forEach(a=>fns.forEach(f=>combos.push({a,f})));
+  let out=[];while(out.length<st.n)out=out.concat(acak(combos));
+  return out.slice(0,st.n);
+}
+function mulai(ulang){
+  let daftar;
+  if(ulang)daftar=st.gagal.slice();
+  else{st.n=+$ ("qCount").value;st.fn=$("typeSelect").value;daftar=susunPool();}
+  if(!daftar.length)return;
+  Object.assign(st,{pool:daftar.slice(),total:daftar.length,skor:0,benar:0,salah:0,lewat:0,gagal:[],jenisSalah:{},main:true});
+  soalBerikut();
+}
+function soalBerikut(){
+  if(!st.pool.length){selesai();return;}
+  st.cur=st.pool.shift();st.h=selesaikan(st.cur.a,st.cur.f);st.hint=0;st.jawab=false;
+  st.pilihan=bangunPilihan(st.cur.a,st.cur.f).pilihan;
+  setAngle(st.cur.a);
+  $("questionText").textContent=`${st.cur.f.toUpperCase()} ${st.cur.a}° = ?`;
+  $("answers").innerHTML="";
+  st.pilihan.forEach((p,i)=>{const b=document.createElement("button");b.className="btn";showHTML(b,p.nilai);b.addEventListener("click",()=>pilih(i));$("answers").appendChild(b);});
+  showHTML($("fb"),"Pikirkan dulu posisi sudutnya: ada di kuadran berapa, dan apa tanda fungsinya? Butuh bantuan? Tekan <strong>Petunjuk</strong> (tidak mengurangi skor).");
+  $("remaining").textContent=st.pool.length+1;hud();
+}
+function pilih(i){
+  if(!st.main||st.jawab)return;
+  st.jawab=true;
+  const p=st.pilihan[i],ok=p.jenis==="benar",h=st.h,bs=$("answers").children;
+  Array.from(bs).forEach((b,k)=>{b.disabled=true;if(st.pilihan[k].jenis==="benar")b.classList.add("correct");});
+  if(ok)st.benar++;
+  else{bs[i].classList.add("wrong");st.salah++;st.gagal.push({a:st.cur.a,f:st.cur.f});st.jenisSalah[p.jenis]=(st.jenisSalah[p.jenis]||0)+1;}
+  st.skor+=ok?100:0;hud();
+  gambarUmpan(h);
+  const kepala=ok?`<strong class="ok">✓ Tepat!</strong> ${h.fn} ${h.theta}° = ${h.hasil}.`:`<strong class="no">Belum tepat.</strong> ${umpanBalikKhusus(p.jenis,h)}`;
+  const langkah=susunLangkah(h).map(x=>`<li>${x}</li>`).join("");
+  showHTML($("fb"),`${kepala}<div class="koor">Titik pada lingkaran: (cos θ, sin θ) = (${selesaikan(h.theta,"cos").hasil}, ${selesaikan(h.theta,"sin").hasil})</div><details${ok?"":" open"}><summary>Lihat alasannya</summary><ol>${langkah}</ol></details><div class="ctrl"><button class="btn primary" id="lanjut">${st.pool.length?"Lanjut":"Lihat hasil"}</button></div>`);
+  $("lanjut").addEventListener("click",soalBerikut);$("lanjut").focus();
+}
+function petunjukKlik(){
+  if(!st.main||st.jawab)return;
+  st.hint=Math.min(st.hint+1,3);
+  let s=`<strong>💡 Petunjuk ${st.hint} dari 3</strong>`;
+  for(let k=1;k<=st.hint;k++)s+=`<p>${k}. ${petunjuk(st.h,k)}</p>`;
+  if(st.hint<3)s+=`<small>Tekan Petunjuk lagi untuk bantuan berikutnya.</small>`;
+  showHTML($("fb"),s);
+}
+function lewati(){
+  if(!st.main||st.jawab)return;
+  st.lewat++;st.gagal.push({a:st.cur.a,f:st.cur.f});soalBerikut();
+}
+function konfeti(){
+  const cs=["#06b6b4","#2dd4bf","#facc15","#fb923c","#ef4444","#7c3aed"];
+  for(let i=0;i<70;i++){const e=document.createElement("div");e.className="cf";
+    e.style.cssText=`left:${Math.random()*100}vw;background:${cs[i%6]};width:${6+Math.random()*8}px;height:${5+Math.random()*5}px;animation-duration:${2+Math.random()*2}s;animation-delay:${Math.random()*.6}s`;
+    document.body.appendChild(e);setTimeout(()=>e.remove(),5000);}
+}
+function selesai(){
+  st.main=false;$("remaining").textContent=0;$("questionText").textContent="Sesi selesai";$("answers").innerHTML="";
+  const acc=st.total?st.benar/st.total:0;
+  const msg=acc>=AMBANG?`Hebat! Kamu benar ${st.benar} dari ${st.total} soal. Pemahamanmu sudah kuat untuk level ini.`
+    :acc>=.5?`Kamu benar ${st.benar} dari ${st.total} soal. Sedikit lagi! Ulangi soal yang belum tepat untuk menguatkan.`
+    :`Sesi ini belum sesuai harapan, dan itu wajar saat mempelajari hal baru. Baca alasan di tiap soal, lalu ulangi soal yang belum tepat. Kamu benar ${st.benar} dari ${st.total}.`;
+  const rk=Object.entries(st.jenisSalah).map(([k,v])=>`<li>${NAMA_JENIS[k]}: ${v} soal</li>`).join("")+(st.lewat?`<li>Dilewati: ${st.lewat} soal</li>`:"");
+  showHTML($("fb"),`<strong>${msg}</strong>${rk?`<p>Yang bisa diperkuat:</p><ul>${rk}</ul>`:""}<div class="ctrl2">${st.gagal.length?`<button class="btn primary" id="ulang">Ulangi soal yang belum tepat</button>`:""}${acc>=AMBANG&&st.level<3?`<button class="btn primary" id="naik">Naik ke Level ${st.level+1}</button>`:""}<button class="btn" id="lagi">Main lagi</button></div>`);
+  if($("ulang"))$("ulang").addEventListener("click",()=>mulai(true));
+  if($("naik"))$("naik").addEventListener("click",()=>{st.level++;mulai(false);});
+  $("lagi").addEventListener("click",()=>mulai(false));
+  if(acc>=AMBANG)konfeti();
+}
+$("startBtn").addEventListener("click",()=>mulai(false));
+$("hintBtn").addEventListener("click",petunjukKlik);
+$("skipBtn").addEventListener("click",lewati);
+$("applySettings").addEventListener("click",()=>{$("fb").textContent="Pengaturan diterapkan. Tekan Mulai untuk memulai.";});
+document.addEventListener("keydown",e=>{
+  if(!st.main)return;
+  if(["1","2","3"].includes(e.key)&&!st.jawab){const b=$("answers").children[+e.key-1];if(b)b.click();}
+  else if(e.key==="Enter"&&st.jawab&&$("lanjut")&&document.activeElement!==$("lanjut"))$("lanjut").click();
+});
+bangunLingkaran();setAngle(0);
+showHTML($("fb"),"Atur jumlah soal dan jenis fungsi, lalu tekan <strong>Mulai</strong> untuk mulai dari Level 1.");
+window.TQ={state:()=>st};
+})();
+</script>
+</body>
+</html>
